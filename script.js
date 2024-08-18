@@ -1,41 +1,56 @@
-document.getElementById('movie-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const movieTitle = document.getElementById('movie-title').value;
-    const apiKey = '3adb2af39c51b652228e7aa1e442f021'; 
-    const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(movieTitle)}`;
+document.addEventListener('DOMContentLoaded', async () => {
+    const apiKey = '3adb2af39c51b652228e7aa1e442f021';
+    const catalogElement = document.getElementById('movie-catalog');
+    const searchInput = document.getElementById('movie-search');
 
-    try {
+    async function fetchPopularMovies() {
+        const url = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=pt-BR&page=1`;
         const response = await fetch(url);
-        
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
-        }
-
         const data = await response.json();
-
-        if (data.results.length > 0) {
-            const movie = data.results[0];
-            displayMovieDetails(movie);
-            console.log('Detalhes do filme:', movie); 
-        } else {
-            document.getElementById('movie-details').innerHTML = 'Nenhum filme encontrado.';
-            console.log('Nenhum filme encontrado.');
-        }
-    } catch (error) {
-        document.getElementById('movie-details').innerHTML = 'Ocorreu um erro ao buscar os detalhes do filme.';
-        console.error('Erro ao buscar detalhes do filme:', error);
+        displayMovies(data.results);
     }
-});
 
-function displayMovieDetails(movie) {
-    const movieDetails = document.getElementById('movie-details');
-    movieDetails.innerHTML = `
-        <h2>${movie.title}</h2>
-        <p><strong>Data de Lançamento:</strong> ${movie.release_date}</p>
-        <p><strong>Sinopse:</strong> ${movie.overview}</p>
-        <p><strong>Nota:</strong> ${movie.vote_average}</p>
-        <p><strong>Popularidade:</strong> ${movie.popularity}</p>
-        <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
-    `;
-}
+    async function fetchMoviesByTitle(title) {
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(title)}&language=pt-BR&page=1`;
+        const response = await fetch(url);
+        const data = await response.json();
+        displayMovies(data.results);
+    }
+
+    function displayMovies(movies) {
+        catalogElement.innerHTML = '';
+
+        if (movies.length === 0) {
+            catalogElement.innerHTML = '<p>Nenhum filme encontrado.</p>';
+            return;
+        }
+
+        movies.forEach(movie => {
+            const posterUrl = movie.poster_path 
+                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` 
+                : 'https://via.placeholder.com/500x750?text=No+Image+Available';
+
+            const movieItem = document.createElement('div');
+            movieItem.classList.add('movie-item');
+
+            movieItem.innerHTML = `
+                <img src="${posterUrl}" alt="${movie.title} poster">
+                <h3>${movie.title}</h3>
+                <p>${movie.release_date}</p>
+            `;
+
+            catalogElement.appendChild(movieItem);
+        });
+    }
+
+    searchInput.addEventListener('input', () => {
+        const searchTerm = searchInput.value.trim();
+        if (searchTerm) {
+            fetchMoviesByTitle(searchTerm);
+        } else {
+            fetchPopularMovies();
+        }
+    });
+
+    fetchPopularMovies();
+});
